@@ -1,4 +1,7 @@
 /* Simple command line tool for snappy */
+
+#define _POSIX_C_SOURCE 200112L /* for snprintf() and getopt() */
+
 #include <sys/fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
