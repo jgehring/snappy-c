@@ -1,4 +1,4 @@
-CFLAGS := -Wall -g -O2 -DNDEBUG=1  -DSG=1 -std=c89 -D_BSD_SOURCE
+CFLAGS := -Wall -g -O2 -DNDEBUG=1  -DSG=1 -std=c89 -pedantic -D_BSD_SOURCE
 # Remove -DSG=1 if you don't need scather-gather support
 # NDEBUG=1 is recommended for production
 

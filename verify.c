@@ -15,6 +15,11 @@ int main(int ac, char **av)
 
 	while (*++av) { 
 		size_t size;
+		size_t outlen;
+		int err;       
+		char *out;
+		char *buf2;
+
 		char *map = mapfile(*av, O_RDONLY, &size);
 		if (!map) {
 			if (size > 0) {
@@ -24,10 +29,8 @@ int main(int ac, char **av)
 			continue;
 		}
 
-		size_t outlen;
-		int err;       
-		char *out = xmalloc(snappy_max_compressed_length(size));
-		char *buf2 = xmalloc(size);
+		out = xmalloc(snappy_max_compressed_length(size));
+		buf2 = xmalloc(size);
 
 		err = snappy_compress(&env, map, size, out, &outlen);		
 		if (err) {

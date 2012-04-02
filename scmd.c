@@ -30,9 +30,10 @@ int match_suffix(char *p, char *suf)
 {
 	int suflen = strlen(suf);
 	int plen = strlen(p);
+	char *s;
 	if (plen < suflen)
 		return 0;
-	char *s = p + plen - suflen;
+	s = p + plen - suflen;
 	return !strcmp(s, suf);
 }
 
@@ -72,6 +73,13 @@ int main(int ac, char **av)
 {
 	int opt;
 	int to_stdout = 0;
+	char *map;
+	size_t size;
+	int err;
+	char *out;
+	size_t outlen;
+	char *file;
+	int fd;
 
 	while ((opt = getopt(ac, av, "dcs")) != -1) {
 		switch (opt) { 
@@ -89,8 +97,6 @@ int main(int ac, char **av)
 		}
 	}
 
-	char *map;
-	size_t size;
 	if (!av[optind])
 		usage();
 
@@ -107,9 +113,6 @@ int main(int ac, char **av)
 		exit(1);
 	}
 		
-	int err;
-	char *out;	
-	size_t outlen;
 	if (mode == uncompress) {
 		err = snappy_uncompressed_length(map, size, &outlen);
 	} else {	
@@ -131,8 +134,6 @@ int main(int ac, char **av)
 		exit(1);
 	}
 
-	char *file;
-	int fd;
 	if (to_stdout) {
 		if(av[optind + 1])
 			usage();

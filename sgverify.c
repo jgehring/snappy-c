@@ -36,10 +36,13 @@ int rand_seq(void)
 
 void *iov_to_buf(struct iovec *iov, int n, size_t *len)
 {
-	*len = sum_iov(iov, n);
-	void *p = malloc(*len);
+	void *p;
 	int i;
-	unsigned offset = 0;
+	unsigned offset;
+
+	*len = sum_iov(iov, n);
+	p = malloc(*len);
+	offset = 0;
 	for (i = 0; i < n; i++) {
 		memcpy(p + offset, iov[i].iov_base, iov[i].iov_len);
 		offset += iov[i].iov_len;
@@ -61,18 +64,24 @@ int main(int ac, char **av)
 
 	while (*++av) { 
 		size_t st_size;
+		int k;
 		char *map = mapfile(*av, O_RDONLY, &st_size);
 		if (!map) {
 			perror(*av);
 			continue;
 		}
 
-		int k;
 		for (k = 0; k < REPEAT; k++) { 
 			struct iovec in_iov[N];
 			int iv = 0;
 			size_t size = st_size;
 			size_t offset = 0;
+			struct iovec out_iov[N];
+			int ov;
+			size_t outlen;
+			int err;
+			char *obuf;
+			int w;
 
 			unsigned rnd_seq_start = rnd_seq;
 
@@ -96,8 +105,7 @@ int main(int ac, char **av)
 			
 			assert (sum_iov(in_iov, iv) == st_size);		
 				       		
-			struct iovec out_iov[N];
-			int ov = 0;
+			ov = 0;
 			size = snappy_max_compressed_length(st_size);
 			while (size > 0 && ov < N - 1) {
 				size_t len = rand_seq() % size + 1;
@@ -115,23 +123,21 @@ int main(int ac, char **av)
 			assert (sum_iov(out_iov, ov) == 
 				snappy_max_compressed_length(st_size));
 
-			size_t outlen;
-		
-			int err = snappy_compress_iov(&env, in_iov, iv, st_size, 
+			err = snappy_compress_iov(&env, in_iov, iv, st_size, 
 						      out_iov, ov, &outlen);
 			if (err < 0) 
 				printf("compression of %s failed: %d\n", *av, err);
 
-			char *obuf = malloc(st_size);
+			obuf = malloc(st_size);
 
 			err = snappy_uncompress_iov(out_iov, ov, outlen, obuf);
 			if (err < 0)
 				printf("uncompression of %s failed: %d\n", *av, err);
 		
 			if (memcmp(obuf, map, st_size)) {
+				int j;
 				printf("comparison of %s failed, olen %lu, orig %lu, rnd_seq %d\n", *av,
 				       outlen, st_size, rnd_seq_start);
-				int j;
 				for (j = 0; j < st_size; j++)
 					if (obuf[j] != map[j]) {
 						printf("%d: %x vs %x\n",
@@ -141,7 +147,6 @@ int main(int ac, char **av)
 					}
 			}
 			
-			int w;
 			for (w = 0; w < iv; w++) 
 				free(in_iov[w].iov_base);
 			for (w = 0; w < ov; w++)
