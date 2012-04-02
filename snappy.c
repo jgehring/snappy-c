@@ -91,7 +91,7 @@
 
 #endif
 
-static inline bool is_little_endian(void)
+static bool is_little_endian(void)
 {
 #ifdef __LITTLE_ENDIAN__
 	return true;
@@ -99,17 +99,17 @@ static inline bool is_little_endian(void)
 	return false;
 }
 
-static inline int log2_floor(u32 n)
+static int log2_floor(u32 n)
 {
 	return n == 0 ? -1 : 31 ^ __builtin_clz(n);
 }
 
-static inline int find_lsb_set_non_zero(u32 n)
+static int find_lsb_set_non_zero(u32 n)
 {
 	return __builtin_ctz(n);
 }
 
-static inline int find_lsb_set_non_zero64(u64 n)
+static int find_lsb_set_non_zero64(u64 n)
 {
 	return __builtin_ctzll(n);
 }
@@ -123,7 +123,7 @@ static inline int find_lsb_set_non_zero64(u64 n)
  * past the last byte of the varint32. Else returns NULL.  On success,
  * "result <= limit".
  */
-static inline const char *varint_parse32_with_limit(const char *p,
+static const char *varint_parse32_with_limit(const char *p,
 						    const char *l,
 						    u32 * OUTPUT)
 {
@@ -172,7 +172,7 @@ done:
  *  EFFECTS    Encodes "v" into "ptr" and returns a pointer to the
  *            byte just past the last encoded byte.
  */
-static inline char *varint_encode32(char *sptr, u32 v)
+static char *varint_encode32(char *sptr, u32 v)
 {
 	/* Operate on characters as unsigneds */
 	unsigned char *ptr = (unsigned char *)(sptr);
@@ -213,12 +213,12 @@ struct source {
 };
 
 /* Only valid at beginning when nothing is consumed */
-static inline int available(struct source *s)
+static int available(struct source *s)
 {
 	return s->total;
 }
 
-static inline const char *peek(struct source *s, size_t *len)
+static const char *peek(struct source *s, size_t *len)
 {
 	if (likely(s->curvec < s->iovlen)) {
 		struct iovec *iv = &s->iov[s->curvec];
@@ -231,7 +231,7 @@ static inline const char *peek(struct source *s, size_t *len)
 	return NULL;
 }
 
-static inline void skip(struct source *s, size_t n)
+static void skip(struct source *s, size_t n)
 {
 	struct iovec *iv = &s->iov[s->curvec];
 	s->curoff += n;
@@ -250,7 +250,7 @@ struct sink {
 	unsigned written;
 };
 
-static inline void append(struct sink *s, const char *data, size_t n)
+static void append(struct sink *s, const char *data, size_t n)
 {
 	struct iovec *iov = &s->iov[s->curvec];
 	char *dst = iov->iov_base + s->curoff;
@@ -270,7 +270,7 @@ static inline void append(struct sink *s, const char *data, size_t n)
 	}
 }
 
-static inline void *sink_peek(struct sink *s, size_t n)
+static void *sink_peek(struct sink *s, size_t n)
 {
 	struct iovec *iov = &s->iov[s->curvec];
 	if (s->curvec < iov->iov_len && iov->iov_len - s->curoff >= n)
@@ -285,18 +285,18 @@ struct source {
 	size_t left;
 };
 
-static inline int available(struct source *s)
+static int available(struct source *s)
 {
 	return s->left;
 }
 
-static inline const char *peek(struct source *s, size_t * len)
+static const char *peek(struct source *s, size_t * len)
 {
 	*len = s->left;
 	return s->ptr;
 }
 
-static inline void skip(struct source *s, size_t n)
+static void skip(struct source *s, size_t n)
 {
 	s->left -= n;
 	s->ptr += n;
@@ -306,14 +306,14 @@ struct sink {
 	char *dest;
 };
 
-static inline void append(struct sink *s, const char *data, size_t n)
+static void append(struct sink *s, const char *data, size_t n)
 {
 	if (data != s->dest)
 		memcpy(s->dest, data, n);
 	s->dest += n;
 }
 
-static inline void *sink_peek(struct sink *s, size_t n)
+static void *sink_peek(struct sink *s, size_t n)
 {
 	return s->dest;
 }
@@ -327,13 +327,13 @@ struct writer {
 };
 
 /* Called before decompression */
-static inline void writer_set_expected_length(struct writer *w, size_t len)
+static void writer_set_expected_length(struct writer *w, size_t len)
 {
 	w->op_limit = w->op + len;
 }
 
 /* Called after decompression */
-static inline bool writer_check_length(struct writer *w)
+static bool writer_check_length(struct writer *w)
 {
 	return w->op == w->op_limit;
 }
@@ -351,7 +351,7 @@ static inline bool writer_check_length(struct writer *w)
  * Note that this does not match the semantics of either memcpy()
  * or memmove().
  */
-static inline void incremental_copy(const char *src, char *op, int len)
+static void incremental_copy(const char *src, char *op, int len)
 {
 	DCHECK_GT(len, 0);
 	do {
@@ -394,7 +394,7 @@ static inline void incremental_copy(const char *src, char *op, int len)
 
 #define kmax_increment_copy_overflow  10
 
-static inline void incremental_copy_fast_path(const char *src, char *op,
+static void incremental_copy_fast_path(const char *src, char *op,
 					      int len)
 {
 	while (op - src < 8) {
@@ -410,7 +410,7 @@ static inline void incremental_copy_fast_path(const char *src, char *op,
 	}
 }
 
-static inline bool writer_append_from_self(struct writer *w, u32 offset,
+static bool writer_append_from_self(struct writer *w, u32 offset,
 					   u32 len)
 {
 	char *op = w->op;
@@ -438,7 +438,7 @@ static inline bool writer_append_from_self(struct writer *w, u32 offset,
 	return true;
 }
 
-static inline bool writer_append(struct writer *w, const char *ip, u32 len)
+static bool writer_append(struct writer *w, const char *ip, u32 len)
 {
 	char *op = w->op;
 	const int space_left = w->op_limit - op;
@@ -449,7 +449,7 @@ static inline bool writer_append(struct writer *w, const char *ip, u32 len)
 	return true;
 }
 
-static inline bool writer_try_fast_append(struct writer *w, const char *ip, 
+static bool writer_try_fast_append(struct writer *w, const char *ip, 
 					  u32 available, u32 len)
 {
 	char *op = w->op;
@@ -471,13 +471,13 @@ static inline bool writer_try_fast_append(struct writer *w, const char *ip,
  * input. Of course, it doesn't hurt if the hash function is reasonably fast
  * either, as it gets called a lot.
  */
-static inline u32 hash_bytes(u32 bytes, int shift)
+static u32 hash_bytes(u32 bytes, int shift)
 {
 	u32 kmul = 0x1e35a7bd;
 	return (bytes * kmul) >> shift;
 }
 
-static inline u32 hash(const char *p, int shift)
+static u32 hash(const char *p, int shift)
 {
 	return hash_bytes(UNALIGNED_LOAD32(p), shift);
 }
@@ -517,7 +517,7 @@ enum {
 	COPY_4_BYTE_OFFSET = 3
 };
 
-static inline char *emit_literal(char *op,
+static char *emit_literal(char *op,
 				 const char *literal,
 				 int len, bool allow_fast_path)
 {
@@ -563,7 +563,7 @@ static inline char *emit_literal(char *op,
 	return op + len;
 }
 
-static inline char *emit_copy_less_than64(char *op, int offset, int len)
+static char *emit_copy_less_than64(char *op, int offset, int len)
 {
 	DCHECK_LE(len, 64);
 	DCHECK_GE(len, 4);
@@ -584,7 +584,7 @@ static inline char *emit_copy_less_than64(char *op, int offset, int len)
 	return op;
 }
 
-static inline char *emit_copy(char *op, int offset, int len)
+static char *emit_copy(char *op, int offset, int len)
 {
 	/*
 	 * Emit 64 byte copies but make sure to keep at least four bytes
@@ -679,7 +679,7 @@ static u16 *get_hash_table(struct snappy_env *env, size_t input_size,
  * x86_64 is little endian.
  */
 #if defined(__LITTLE_ENDIAN__) && BITS_PER_LONG == 64
-static inline int find_match_length(const char *s1,
+static int find_match_length(const char *s1,
 				    const char *s2, const char *s2_limit)
 {
 	int matched = 0;
@@ -724,7 +724,7 @@ static inline int find_match_length(const char *s1,
 	return matched;
 }
 #else
-static inline int find_match_length(const char *s1,
+static int find_match_length(const char *s1,
 				    const char *s2, const char *s2_limit)
 {
 	/* Implementation based on the x86-64 version, above. */
@@ -758,7 +758,7 @@ static inline int find_match_length(const char *s1,
  *  UNALIGNED_LOAD32(p) ... UNALIGNED_LOAD32(p+1) ... UNALIGNED_LOAD32(p+2)
  * are slower than UNALIGNED_LOAD64(p) followed by shifts and casts to u32.
  */
-static inline u32 get_u32_at_offset(u64 v, int offset)
+static u32 get_u32_at_offset(u64 v, int offset)
 {
 	DCHECK(0 <= offset && offset <= 4);
 	return v >> (is_little_endian()? 8 * offset : 32 - 8 * offset);
@@ -1227,7 +1227,7 @@ static int internal_uncompress(struct source *r,
 	return (decompressor.eof && writer_check_length(writer)) ? 0 : -EIO;
 }
 
-static inline int compress(struct snappy_env *env, struct source *reader,
+static int compress(struct snappy_env *env, struct source *reader,
 			   struct sink *writer)
 {
 	int err;
